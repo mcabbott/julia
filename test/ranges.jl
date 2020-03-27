@@ -1593,3 +1593,12 @@ end
         @test eltype(T(1:5)) === eltype(T(1:5)[1:2])
     end
 end
+
+@testset "Char ranges are regular" begin
+    r = 'a':'z'
+    r2 = 'α':2:'ω'
+    r3 = StepRangeLen('a',3,10)
+    @test Base.RangeStepStyle(r) === RangeStepRegular()
+    @test Base.RangeStepStyle(r2) === RangeStepRegular()
+    @test Base.RangeStepStyle(r3) === RangeStepRegular()
+end
