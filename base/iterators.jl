@@ -272,6 +272,8 @@ setindex!(v::Pairs, value, key) = (v.data[key] = value; v)
 get(v::Pairs, key, default) = get(v.data, key, default)
 get(f::Base.Callable, v::Pairs, key) = get(f, v.data, key)
 
+Base.map(f, A::Iterators.Pairs) = collect(Generator(f,A))
+
 # zip
 
 struct Zip{Is<:Tuple}
