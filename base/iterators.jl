@@ -12,7 +12,8 @@ using .Base:
     @inline, Pair, AbstractDict, IndexLinear, IndexCartesian, IndexStyle, AbstractVector, Vector,
     tail, SizeUnknown, HasLength, HasShape, IsInfinite, EltypeUnknown, HasEltype, OneTo,
     @propagate_inbounds, @isdefined, @boundscheck, @inbounds, Generator, AbstractRange,
-    LinearIndices, (:), |, +, -, !==, !, <=, <, missing, any, _counttuple
+    LinearIndices, (:), |, +, -, !==, !, <=, <, missing, any, _counttuple,
+    Float64, Float32, ComplexF64, ComplexF32, Number, Real, Complex
 
 import .Base:
     first, last,
