@@ -12,7 +12,7 @@ using .Base:
     @inline, Pair, AbstractDict, IndexLinear, IndexCartesian, IndexStyle, AbstractVector, Vector,
     tail, SizeUnknown, HasLength, HasShape, IsInfinite, EltypeUnknown, HasEltype, OneTo,
     @propagate_inbounds, @isdefined, @boundscheck, @inbounds, Generator, AbstractRange,
-    LinearIndices, (:), |, +, -, !==, !, <=, <, missing, any, _counttuple, TwicePrecision
+    LinearIndices, (:), |, +, -, !==, !, <=, <, missing, any, _counttuple
 
 import .Base:
     first, last,
@@ -1352,7 +1352,7 @@ spaced logarithmically, rather than linearly as for [`range`](@ref).
 That is, the ratio of successive elements is constant, not the difference.
 
 !!! compat "Julia 1.7"
-     This function requires at least Julia 1.7.
+    This function requires at least Julia 1.7.
 
 This is similar to `geomspace` in Python, and to `PowerRange` in Mathematica.
 
@@ -1403,7 +1403,7 @@ ratio_nth_root(a::Number, b::Number, n::Int) = (a/b)^(1/n)
 ratio_nth_root(a::Float32, b::Float32, n::Int) = (Float64(a)/Float64(b))^(1/n)
 ratio_nth_root(a::ComplexF32, b::ComplexF32, n::Int) = (ComplexF64(a)/ComplexF64(b))^(1/n)
 function ratio_nth_root(a::T, b::T, m::Int) where {T<:Union{Float64, ComplexF64}}
-    over = Base.TwicePrecision(a) / TwicePrecision(b)
+    over = Base.TwicePrecision(a) / Base.TwicePrecision(b)
     r1 = Base.TwicePrecision((over.hi)^(1/m))
     # Refine that using one step of Newton's method:
     r1pow = prod(r1 for _ in 1:m-1)
