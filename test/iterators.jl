@@ -848,3 +848,30 @@ end
     @test cumprod(x + 1 for x in 1:3) == [2, 6, 24]
     @test accumulate(+, (x^2 for x in 1:3); init=100) == [101, 105, 114]
 end
+
+@testset "logrange" begin
+    @test collect(logrange(2 => 16, 4)) == [2, 4, 8, 16]
+    @test collect(logrange(1000 => 1, 4)) == [1000, 100, 10, 1]
+    @test collect(logrange(-1 => -4, 3)) == [-1, -2, -4]
+    @test collect(logrange(1 => -1+0im, 3)) == [1, im, -1]
+
+    @test collect(logrange(1/8 => 8.0, 7)) == [0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
+    @test collect(logrange(1 => 10^10, 21))[1:2:end] == 10 .^ (0:10)
+    @test collect(logrange(0.789 => 123_456, 147))[[begin, end]] == [0.789, 123_456]
+
+    @test collect(logrange(1 => 10, 3)) isa Vector{Float64}
+    @test collect(logrange(1 => 10f0, 3)) isa Vector{Float32}
+    @test collect(logrange(1f0 => 10, 3)) isa Vector{Float32}
+    @test collect(logrange(1f0 => 10+im, 3)) isa Vector{ComplexF32}
+    @test collect(logrange(1 => big(10), 3)) isa Vector{BigFloat}
+
+    @test length(logrange(2 => 16, 4)) == 4
+    @test size(logrange(2 => 16, 4)) == (4,)
+    @test Base.IteratorSize(typeof(logrange(2=>3,4))) == Base.HasLength()
+
+    @test eltype(logrange(2 => 16, 4)) == Float64
+    @test Base.IteratorEltype(typeof(logrange(2=>3,4))) == Base.HasEltype()
+
+    @test_throws ArgumentError logrange(1 => 10, 1) # allows only length >= 2
+    @test_throws DomainError logrange(1 => -1, 3)   # needs complex numbers
+end

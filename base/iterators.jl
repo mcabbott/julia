@@ -12,7 +12,7 @@ using .Base:
     @inline, Pair, AbstractDict, IndexLinear, IndexCartesian, IndexStyle, AbstractVector, Vector,
     tail, SizeUnknown, HasLength, HasShape, IsInfinite, EltypeUnknown, HasEltype, OneTo,
     @propagate_inbounds, @isdefined, @boundscheck, @inbounds, Generator, AbstractRange,
-    LinearIndices, (:), |, +, -, !==, !, <=, <, missing, any, _counttuple
+    LinearIndices, (:), |, +, -, !==, !, <=, <, missing, any, _counttuple, TwicePrecision
 
 import .Base:
     first, last,
@@ -22,7 +22,7 @@ import .Base:
     getindex, setindex!, get, iterate,
     popfirst!, isdone, peek
 
-export enumerate, zip, rest, countfrom, take, drop, takewhile, dropwhile, cycle, repeated, product, flatten, partition
+export enumerate, zip, rest, countfrom, take, drop, takewhile, dropwhile, cycle, repeated, product, flatten, partition, logrange
 
 """
     Iterators.map(f, iterators...)
@@ -1343,4 +1343,131 @@ only(x::NamedTuple) = throw(
     ArgumentError("NamedTuple contains $(length(x)) elements, must contain exactly 1 element")
 )
 
+
+"""
+    logrange(start => stop, length)
+
+Returns an iterator which runs from `start` to `stop` with `length` elements
+spaced logarithmically, rather than linearly as for [`range`](@ref).
+That is, the ratio of successive elements is constant, not the difference.
+
+!!! compat "Julia 1.7"
+     This function requires at least Julia 1.7.
+
+This is similar to `geomspace` in Python, and to `PowerRange` in Mathematica.
+
+# Examples
+```jldoctest
+julia> foreach(println, logrange(2 => 16, 4))
+2.0
+4.0
+8.0
+16.0
+
+julia> collect(logrange(1000 => 1, 7))
+7-element Vector{Float64}:
+ 1000.0
+  316.22776601683796
+  100.0
+   31.622776601683793
+   10.0
+    3.1622776601683795
+    1.0
+
+julia> ans ≈ 10 .^ (3:-0.5:0)
+true
+
+julia> collect(logrange(-1 => -2f0, 3))
+3-element Vector{Float32}:
+ -1.0
+ -1.4142135
+ -2.0
+
+julia> map(rad2deg∘angle, logrange(1 => -1+0im, 5))
+5-element Vector{Float64}:
+   0.0
+  45.0
+  90.0
+ 135.0
+ 180.0
+```
+"""
+function logrange(fromto::Pair{<:Number, <:Number}, len::Integer)
+    len >= 2 || throw(ArgumentError("logrange must have length of at least 2"))
+    start, stop = map(float, promote(fromto...))
+    ratio = ratio_nth_root(stop, start, Int(len)-1)
+    LogRange(start, ratio, Int(len))
 end
+
+ratio_nth_root(a::Number, b::Number, n::Int) = (a/b)^(1/n)
+ratio_nth_root(a::Float32, b::Float32, n::Int) = (Float64(a)/Float64(b))^(1/n)
+ratio_nth_root(a::ComplexF32, b::ComplexF32, n::Int) = (ComplexF64(a)/ComplexF64(b))^(1/n)
+function ratio_nth_root(a::T, b::T, m::Int) where {T<:Union{Float64, ComplexF64}}
+    over = Base.TwicePrecision(a) / TwicePrecision(b)
+    r1 = Base.TwicePrecision((over.hi)^(1/m))
+    # Refine that using one step of Newton's method:
+    r1pow = prod(r1 for _ in 1:m-1)
+    r2 = (m-1)*r1/m + over / (m * r1pow)
+    # r2pow = prod(r2 for _ in 1:m-1)
+    # r3 = (m-1)*r2/m + over / (m * r2pow)
+end
+
+"""
+    logrange(start => limit; ratio)
+
+Iterates `start, start*ratio, ...` while `<= limit`. Not sure we want this method.
+
+```jldoctest
+julia> logrange(3 => 103, ratio=3) |> collect
+4-element Vector{Int64}:
+  3
+  9
+ 27
+ 81
+```
+"""
+function logrange(fromto::Pair{<:Real, <:Real}; length=nothing, ratio=nothing)
+    start, stop = fromto
+    if ratio === nothing && length !== nothing
+        logrange(fromto, length)
+    elseif ratio !== nothing && length === nothing
+        len = 1 + trunc(Int, log(stop/start) / log(ratio))
+        # This may not be accurate enough, TODO
+        len >= 2 || throw(ArgumentError("logrange must have length of at least 2"))
+        start, _, ratio = promote(start, stop, ratio)
+        LogRange(start, ratio, len)
+    else
+        throw(ArgumentError("either length or ratio must be provided"))
+    end
+end
+
+struct LogRange{T,S}
+    start::T
+    ratio::S
+    len::Int
+end
+
+Base.length(r::LogRange) = r.len
+Base.size(r::LogRange) = (r.len,)
+
+function Base.iterate(r::LogRange{T,S}) where {T,S}
+    y = convert(promote_type(T,S), r.start)
+    r.start, (y,1)
+end
+
+function Base.iterate(r::LogRange{T}, (x,n)) where {T}
+    if n >= r.len
+        nothing
+    else
+        y = x * r.ratio
+        T(y), (y, n+1)
+    end
+end
+
+Base.eltype(::Type{LogRange{T}}) where {T} = T
+Base.eltype(r::LogRange{T}) where {T} = T
+
+Base.ndims(::Type{LogRange{T}}) where {T} = 1
+Base.ndims(r::LogRange{T}) where {T} = 1
+
+end # module
