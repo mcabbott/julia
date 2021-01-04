@@ -1461,14 +1461,14 @@ function Base.iterate(r::LogRange{T}, (x,n)) where {T}
         nothing
     else
         y = x * r.ratio
-        T(y), (y, n+1)
+        convert(T,y), (y,n+1)
     end
 end
 
-Base.eltype(::Type{LogRange{T}}) where {T} = T
+Base.eltype(::Type{<:LogRange{T}}) where {T} = T
 Base.eltype(r::LogRange{T}) where {T} = T
 
-Base.ndims(::Type{LogRange{T}}) where {T} = 1
-Base.ndims(r::LogRange{T}) where {T} = 1
+Base.ndims(::Type{<:LogRange}) = 1
+Base.ndims(r::LogRange) = 1
 
 end # module
