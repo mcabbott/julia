@@ -23,7 +23,7 @@ import .Base:
     getindex, setindex!, get, iterate,
     popfirst!, isdone, peek
 
-export enumerate, zip, rest, countfrom, take, drop, takewhile, dropwhile, cycle, repeated, product, flatten, partition, logrange
+export enumerate, zip, rest, countfrom, take, drop, takewhile, dropwhile, cycle, repeated, product, flatten, partition, logrange, LogRange
 
 """
     Iterators.map(f, iterators...)
@@ -1413,35 +1413,48 @@ function ratio_nth_root(a::T, b::T, m::Int) where {T<:Union{Float64, ComplexF64}
     # r3 = (m-1)*r2/m + over / (m * r2pow)
 end
 
-"""
-    logrange(start => limit; ratio)
 
-Iterates `start, start*ratio, ...` while `<= limit`. Not sure we want this method.
+"""
+    LogRange{T,S}(start::T, ratio::S, len::Int)
+
+Iterator which multiplies by `ratio` at each step, giving in total `len` objects.
+Constructing this directly instead of using [`logrange`](@ref) avoids the cost of
+computing `ratio` to high precision.
+
+Note that its output is of type `T`, so iterating for intance `LogRange(2, pi, 10)` will
+lead to an `InexactError`, since `2*pi` cannot be converted to `Int`.
+
+See also: [`LinRange`](@ref Base.LinRange), [`range`](@ref Base.range), [`TwicePrecision`](@ref Base.TwicePrecision).
+
+# Examples
 
 ```jldoctest
-julia> logrange(3 => 103, ratio=3) |> collect
-4-element Vector{Int64}:
-  3
-  9
- 27
- 81
+julia> collect(LogRange(10,2,3))  # logrange(10 => 40, 3) would use Float64 not integers
+3-element Vector{Int64}:
+ 10
+ 20
+ 40
+
+julia> collect(LogRange(0.1, sqrt(10), 5))  # no corrections for rounding errors
+5-element Vector{Float64}:
+  0.1
+  0.316227766016838
+  1.0000000000000002
+  3.1622776601683804
+ 10.000000000000004
+
+julia> r = logrange(0.1 => 10, 5)  # type T != type S
+LogRange{Float64, Base.TwicePrecision{Float64}}(0.1, Base.TwicePrecision{Float64}(3.162277660168379, 2.0941562178568784e-16), 5)
+
+julia> collect(r)
+5-element Vector{Float64}:
+  0.1
+  0.31622776601683794
+  1.0
+  3.1622776601683795
+ 10.0
 ```
 """
-function logrange(fromto::Pair{<:Real, <:Real}; length=nothing, ratio=nothing)
-    start, stop = fromto
-    if ratio === nothing && length !== nothing
-        logrange(fromto, length)
-    elseif ratio !== nothing && length === nothing
-        len = 1 + trunc(Int, log(stop/start) / log(ratio))
-        # This may not be accurate enough, TODO
-        len >= 2 || throw(ArgumentError("logrange must have length of at least 2"))
-        start, _, ratio = promote(start, stop, ratio)
-        LogRange(start, ratio, len)
-    else
-        throw(ArgumentError("either length or ratio must be provided"))
-    end
-end
-
 struct LogRange{T,S}
     start::T
     ratio::S
