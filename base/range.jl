@@ -1159,6 +1159,9 @@ Returns an iterator which runs from `start` to `stop` with `length` elements
 spaced logarithmically, rather than linearly as for [`range`](@ref).
 That is, the ratio of successive elements is constant, not the difference.
 
+The necessary ratio is computed accurately to reach the final and intermediate values
+rationally. To avoid this overhead, see the [`LogRange`](@ref) constructor.
+
 !!! compat "Julia 1.7"
     This function requires at least Julia 1.7.
 
@@ -1225,8 +1228,6 @@ computing `ratio` to high precision.
 
 Note that its output is of type `T`, so iterating for intance `LogRange(2, pi, 10)` will
 lead to an `InexactError`, since `2*pi` cannot be converted to `Int`.
-
-See also: [`LinRange`](@ref Base.LinRange), [`range`](@ref Base.range), [`TwicePrecision`](@ref Base.TwicePrecision).
 
 # Examples
 
