@@ -1209,17 +1209,12 @@ end
 
 ratio_nth_root(a::Number, b::Number, n::Int) = (a/b)^(1/n)
 ratio_nth_root(a::Float32, b::Float32, n::Int) = (Float64(a)/Float64(b))^(1/n)
-ratio_nth_root(a::ComplexF32, b::ComplexF32, n::Int) = (ComplexF64(a)/ComplexF64(b))^(1/n)
-function ratio_nth_root(a::T, b::T, m::Int) where {T<:Union{Float64, ComplexF64}}
+function ratio_nth_root(a::Real, b::Real, m::Int)
     over = TwicePrecision(a) / TwicePrecision(b)
     r1 = TwicePrecision((over.hi)^(1/m))
-    # Refine that using one step of Newton's method:
     r1pow = prod(r1 for _ in 1:m-1)
     r2 = (m-1)*r1/m + over / (m * r1pow)
-    # r2pow = prod(r2 for _ in 1:m-1)
-    # r3 = (m-1)*r2/m + over / (m * r2pow)
 end
-
 
 """
     LogRange{T,S}(start::T, ratio::S, len::Int)
