@@ -1152,15 +1152,19 @@ julia> mod(3, 0:2)
 mod(i::Integer, r::OneTo) = mod1(i, last(r))
 mod(i::Integer, r::AbstractUnitRange{<:Integer}) = mod(i-first(r), length(r)) + first(r)
 
+
 """
-    logrange(start => stop, length)
+    logrange(start, stop; length, ratio)
 
-Returns an iterator which runs from `start` to `stop` with `length` elements
-spaced logarithmically, rather than linearly as for [`range`](@ref).
-That is, the ratio of successive elements is constant, not the difference.
+Create an iterator whose elements are spaced logarithmically, rather than linearly
+as for [`range`](@ref), i.e. the ratio of successive elements is constant, not the difference.
 
-The necessary ratio is computed accurately to reach the final and intermediate values
-rationally. To avoid this overhead, see the [`LogRange`](@ref) constructor.
+One of two keywords must be provided:
+
+* Given the `length`, the necessary ratio is computed accurately to reach the final and
+  intermediate values rationally. To avoid this overhead, see the [`LogRange`](@ref) constructor.
+
+* Otherwise, given the `ratio`, the final value is the last one `<= stop`.
 
 !!! compat "Julia 1.7"
     This function requires at least Julia 1.7.
@@ -1169,13 +1173,15 @@ This is similar to `geomspace` in Python, and to `PowerRange` in Mathematica.
 
 # Examples
 ```jldoctest
-julia> foreach(println, logrange(2 => 16, 4))
-2.0
-4.0
-8.0
-16.0
+julia> for x in logrange(2, 19; ratio=2)
+         println(x)
+       end
+2
+4
+8
+16
 
-julia> collect(logrange(1000 => 1, 7))
+julia> collect(logrange(1000, 1; length=7))
 7-element Vector{Float64}:
  1000.0
   316.22776601683796
@@ -1188,13 +1194,13 @@ julia> collect(logrange(1000 => 1, 7))
 julia> ans ≈ 10 .^ (3:-0.5:0)
 true
 
-julia> collect(logrange(-1 => -2f0, 3))
+julia> collect(logrange(-1, -2f0, length=3))
 3-element Vector{Float32}:
  -1.0
  -1.4142135
  -2.0
 
-julia> map(rad2deg∘angle, logrange(1 => -1+0im, 5))
+julia> map(rad2deg∘angle, logrange(1, -1+0im, length=5))
 5-element Vector{Float64}:
    0.0
   45.0
@@ -1203,11 +1209,24 @@ julia> map(rad2deg∘angle, logrange(1 => -1+0im, 5))
  180.0
 ```
 """
-function logrange(fromto::Pair{<:Number, <:Number}, len::Integer)
-    len >= 2 || throw(ArgumentError("logrange must have length of at least 2"))
-    start, stop = map(float, promote(fromto...))
-    ratio = ratio_nth_root(stop, start, Int(len)-1)
-    LogRange(start, ratio, Int(len))
+function logrange(start::Number, stop::Number;
+    length::Union{Nothing,Integer}=nothing, ratio::Union{Nothing,Number}=nothing)
+    if length !== nothing
+        length >= 2 || throw(ArgumentError("logrange must have length of at least 2"))
+        _start, _stop = map(float, promote(start, stop))
+        _ratio = ratio_nth_root(stop, start, Int(length)-1)
+        if ratio !== nothing
+            check = oftype(float(ratio), _ratio)
+            ratio == check || throw(ArgumentError("ratio = $ratio does not match $check computed from length = $length"))
+        end
+        LogRange(_start, _ratio, Int(length))
+    elseif ratio !== nothing
+        _start, _ratio = promote(start, ratio)
+        num = trunc(Int, log(ratio, stop/_start))
+        fin = prod(_ratio for _ in 1:num; init=start)
+        _length = fin <= stop ? num+1 : num
+        LogRange(_start, _ratio, _length)
+    end
 end
 
 ratio_nth_root(a::Number, b::Number, n::Int) = (a/b)^(1/n)
@@ -1232,12 +1251,6 @@ lead to an `InexactError`, since `2*pi` cannot be converted to `Int`.
 # Examples
 
 ```jldoctest
-julia> collect(LogRange(10,2,3))  # logrange(10 => 40, 3) would use Float64 not integers
-3-element Vector{Int64}:
- 10
- 20
- 40
-
 julia> collect(LogRange(0.1, sqrt(10), 5))  # no corrections for rounding errors
 5-element Vector{Float64}:
   0.1
@@ -1246,7 +1259,7 @@ julia> collect(LogRange(0.1, sqrt(10), 5))  # no corrections for rounding errors
   3.1622776601683804
  10.000000000000004
 
-julia> r = logrange(0.1 => 10, 5)  # type T != type S
+julia> r = logrange(0.1, 10, length=5)  # type T != type S
 LogRange{Float64, Base.TwicePrecision{Float64}}(0.1, Base.TwicePrecision{Float64}(3.162277660168379, 2.0941562178568784e-16), 5)
 
 julia> collect(r)
