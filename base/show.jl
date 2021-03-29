@@ -2370,6 +2370,9 @@ end
 
 function print_type_stacktrace(io, type; color=:normal)
     str = sprint(show, type, context=io)
+    print_type_stacktrace(io, str; color)
+end
+function print_type_stacktrace(io, str::String; color=:normal)
     i = findfirst('{', str)
     if i === nothing || !get(io, :backtrace, false)::Bool
         printstyled(io, str; color=color)
