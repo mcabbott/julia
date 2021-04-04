@@ -584,7 +584,7 @@ function show_full_backtrace(io::IO, trace::Vector; print_linebreaks::Bool)
     modulecolordict = copy(STACKTRACE_FIXEDCOLORS)
     modulecolorcycler = Iterators.Stateful(Iterators.cycle(STACKTRACE_MODULECOLORS))
 
-    println(io, "\nStacktrace:")
+    printstyled(io, "\nStacktrace:\n"; color=:red)
 
     for (i, (frame, n)) in enumerate(trace)
         print_stackframe(io, i, frame, n, ndigits_max, modulecolordict, modulecolorcycler)
@@ -643,7 +643,7 @@ function show_reduced_backtrace(io::IO, t::Vector)
 
     try invokelatest(update_stackframes_callback[], displayed_stackframes) catch end
 
-    println(io, "\nStacktrace:")
+    printstyled(io, "\nStacktrace:\n"; color=:red)
 
     ndigits_max = ndigits(length(t))
 
