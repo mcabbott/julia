@@ -37,7 +37,7 @@ show_index(io::IO, x::Colon) = print(io, ':')
 
 
 function showerror(io::IO, ex::BoundsError)
-    print(io, "BoundsError")
+    printstyled(io, "BoundsError"; color=:light_red)
     if isdefined(ex, :a)
         print(io, ": attempt to access ")
         summary(io, ex.a)
@@ -60,7 +60,7 @@ function showerror(io::IO, ex::BoundsError)
 end
 
 function showerror(io::IO, ex::TypeError)
-    print(io, "TypeError: ")
+    printstyled(io, "TypeError: "; color=:light_red)
     if ex.expected === Bool
         print(io, "non-boolean (", typeof(ex.got), ") used in boolean context")
     else
@@ -92,14 +92,14 @@ function showerror(io::IO, ex, bt; backtrace=true)
 end
 
 function showerror(io::IO, ex::LoadError, bt; backtrace=true)
-    !isa(ex.error, LoadError) && print(io, "LoadError: ")
+    !isa(ex.error, LoadError) && printstyled(io, "LoadError: "; color=:light_red)
     showerror(io, ex.error, bt, backtrace=backtrace)
     print(io, "\nin expression starting at $(ex.file):$(ex.line)")
 end
 showerror(io::IO, ex::LoadError) = showerror(io, ex, [])
 
 function showerror(io::IO, ex::InitError, bt; backtrace=true)
-    print(io, "InitError: ")
+    printstyled(io, "InitError: "; color=:light_red)
     showerror(io, ex.error, bt, backtrace=backtrace)
     print(io, "\nduring initialization of module ", ex.mod)
 end
@@ -109,10 +109,10 @@ function showerror(io::IO, ex::DomainError)
     if isa(ex.val, AbstractArray)
         compact = get(io, :compact, true)
         limit = get(io, :limit, true)
-        print(IOContext(io, :compact => compact, :limit => limit),
-              "DomainError with ", ex.val)
+        printstyled(IOContext(io, :compact => compact, :limit => limit),
+              "DomainError with ", ex.val; color=:light_red)
     else
-        print(io, "DomainError with ", ex.val)
+        printstyled(io, "DomainError with ", ex.val; color=:light_red)
     end
     if isdefined(ex, :msg)
         print(io, ":\n", ex.msg)
@@ -136,10 +136,10 @@ function showerror(io::IO, ex::SystemError)
     end
 end
 
-showerror(io::IO, ::DivideError) = print(io, "DivideError: integer division error")
-showerror(io::IO, ::StackOverflowError) = print(io, "StackOverflowError:")
-showerror(io::IO, ::UndefRefError) = print(io, "UndefRefError: access to undefined reference")
-showerror(io::IO, ::EOFError) = print(io, "EOFError: read end of file")
+showerror(io::IO, ::DivideError) = printstyled(io, "DivideError: integer division error"; color=:light_red)
+showerror(io::IO, ::StackOverflowError) = printstyled(io, "StackOverflowError"; color=:light_red)
+showerror(io::IO, ::UndefRefError) = printstyled(io, "UndefRefError: access to undefined reference"; color=:light_red)
+showerror(io::IO, ::EOFError) = printstyled(io, "EOFError: read end of file"; color=:light_red)
 function showerror(io::IO, ex::ErrorException)
     print(io, ex.msg)
     if ex.msg == "type String has no field data"
@@ -147,24 +147,27 @@ function showerror(io::IO, ex::ErrorException)
         print(io, "Use `codeunits(str)` instead.")
     end
 end
-showerror(io::IO, ex::KeyError) = (print(io, "KeyError: key ");
+showerror(io::IO, ex::KeyError) = begin printstyled(io, "KeyError: "); 
+                                   print(io, "key ");
                                    show(io, ex.key);
-                                   print(io, " not found"))
-showerror(io::IO, ex::InterruptException) = print(io, "InterruptException:")
-showerror(io::IO, ex::ArgumentError) = print(io, "ArgumentError: ", ex.msg)
-showerror(io::IO, ex::AssertionError) = print(io, "AssertionError: ", ex.msg)
-showerror(io::IO, ex::OverflowError) = print(io, "OverflowError: ", ex.msg)
+                                   print(io, " not found") end
+showerror(io::IO, ex::InterruptException) = printstyled(io, "InterruptException:"; color=:light_red)
+showerror(io::IO, ex::ArgumentError) = printstyled(io, "ArgumentError: ", ex.msg; color=:light_red)
+showerror(io::IO, ex::AssertionError) = printstyled(io, "AssertionError: ", ex.msg; color=:light_red)
+showerror(io::IO, ex::OverflowError) = printstyled(io, "OverflowError: ", ex.msg; color=:light_red)
 
 showerror(io::IO, ex::UndefKeywordError) =
-    print(io, "UndefKeywordError: keyword argument $(ex.var) not assigned")
+    printstyled(io, "UndefKeywordError: keyword argument $(ex.var) not assigned"; color=:light_red)
 
 function showerror(io::IO, ex::UndefVarError)
-    print(io, "UndefVarError: $(ex.var) not defined")
+    printstyled(io, "UndefVarError: "; color=:light_red)
+    print(io, ex.var, " not defined")
     Experimental.show_error_hints(io, ex)
 end
 
 function showerror(io::IO, ex::InexactError)
-    print(io, "InexactError: ", ex.func, '(')
+    printstyled(io, "InexactError: "; color=:light_red)
+    print(io, ex.func, '(')
     nameof(ex.T) === ex.func || print(io, ex.T, ", ")
     print(io, ex.val, ')')
     Experimental.show_error_hints(io, ex)
@@ -228,7 +231,7 @@ function showerror(io::IO, ex::MethodError)
     end
     arg_types_param::SimpleVector = arg_types.parameters
     show_candidates = true
-    print(io, "MethodError: ")
+    printstyled(io, "MethodError: "; color=:light_red)
     ft = typeof(f)
     name = ft.name.mt.name
     f_is_function = false
@@ -330,7 +333,7 @@ striptype(::Type{T}) where {T} = T
 striptype(::Any) = nothing
 
 function showerror_ambiguous(io::IO, meth, f, args)
-    print(io, "MethodError: ")
+    printstyled(io, "MethodError: "; color=:light_red)
     show_signature_function(io, isa(f, Type) ? Type{f} : typeof(f))
     print(io, "(")
     p = args.parameters
@@ -338,7 +341,7 @@ function showerror_ambiguous(io::IO, meth, f, args)
         print(io, "::", a)
         i < length(p) && print(io, ", ")
     end
-    print(io, ") is ambiguous. Candidates:")
+    print(io, ") is ambiguous. \nCandidates:")
     sigfix = Any
     for m in meth
         print(io, "\n  ", m)
