@@ -59,6 +59,14 @@ function showerror(io::IO, ex::BoundsError)
     Experimental.show_error_hints(io, ex)
 end
 
+function showerror(io::IO, ex::DimensionMismatch)
+    printstyled(io, "DimensionMismatch"; color=:light_red)
+    if !isempty(ex.msg)
+        printstyled(io, ": "; color=:light_red)
+        print(io, ex.msg)
+    end
+end
+
 function showerror(io::IO, ex::TypeError)
     printstyled(io, "TypeError: "; color=:light_red)
     if ex.expected === Bool
