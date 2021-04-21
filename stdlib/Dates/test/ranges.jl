@@ -591,6 +591,14 @@ a = Dates.Time(23, 1, 1)
     @test Base.RangeStepStyle(mr) === Base.RangeStepIrregular()
     m36 = mr[36+1]
     @test findfirst(isequal(m36), mr) == findfirst(isequal(m36), collect(mr))
+    # but days etc. are regular
+    dr = Date(2020,03,27):Day(1):Date(2021,03,21)
+    @test Base.RangeStepStyle(dr) === Base.RangeStepRegular()
+    aday = rand(dr)
+    i1fast = findfirst(isequal(aday), dr)
+    i1slow = findfirst(d -> d==aday, dr)
+    @test i1fast == i1slow
+    @test dr[i1fast] == aday
 end
 
 @testset "range overflow" begin
