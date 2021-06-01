@@ -1184,6 +1184,9 @@ end
 
     # issue #21123
     @test mapslices(nnz, sparse(1.0I, 3, 3), dims=1) == [1 1 1]
+
+    # re-write, #40996
+    @test_throws ArgumentError mapslices(identity, rand(2,3), dims=(1,3)) # previously BoundsError
 end
 
 @testset "single multidimensional index" begin
