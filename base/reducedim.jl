@@ -105,10 +105,10 @@ _realtype(T::Type) = T
 _realtype(::Union{typeof(abs),typeof(abs2)}, T) = _realtype(T)
 _realtype(::Any, T) = T
 
-function reducedim_init(f, op::Union{typeof(+),typeof(add_sum)}, A::AbstractArray, region)
+function reducedim_init(f, op::Union{typeof(+),typeof(add_sum)}, A::AbstractArrayOrBroadcasted, region)
     _reducedim_init(f, op, zero, sum, A, region)
 end
-function reducedim_init(f, op::Union{typeof(*),typeof(mul_prod)}, A::AbstractArray, region)
+function reducedim_init(f, op::Union{typeof(*),typeof(mul_prod)}, A::AbstractArrayOrBroadcasted, region)
     _reducedim_init(f, op, one, prod, A, region)
 end
 function _reducedim_init(f, op, fv, fop, A, region)
@@ -126,7 +126,7 @@ end
 
 # initialization when computing minima and maxima requires a little care
 for (f1, f2, initval, typeextreme) in ((:min, :max, :Inf, :typemax), (:max, :min, :(-Inf), :typemin))
-    @eval function reducedim_init(f, op::typeof($f1), A::AbstractArray, region)
+    @eval function reducedim_init(f, op::typeof($f1), A::AbstractArrayOrBroadcasted, region)
         # First compute the reduce indices. This will throw an ArgumentError
         # if any region is invalid
         ri = reduced_indices(A, region)

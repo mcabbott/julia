@@ -243,6 +243,7 @@ Base.IndexStyle(::Type{<:Broadcasted{<:Any,<:Tuple{Any}}}) = IndexLinear()
 Base.IndexStyle(::Type{<:Broadcasted{<:Any}}) = IndexCartesian()
 
 Base.LinearIndices(bc::Broadcasted{<:Any,<:Tuple{Any}}) = LinearIndices(axes(bc))::LinearIndices{1}
+Base.LinearIndices(bc::Broadcasted{<:Any,<:Tuple{Vararg{Any,N}}}) where {N} = LinearIndices(axes(bc))::LinearIndices{N}
 
 Base.ndims(::Broadcasted{<:Any,<:NTuple{N,Any}}) where {N} = N
 Base.ndims(::Type{<:Broadcasted{<:Any,<:NTuple{N,Any}}}) where {N} = N
