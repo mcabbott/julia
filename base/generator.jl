@@ -100,6 +100,14 @@ IteratorSize(::Type{Any}) = SizeUnknown()
 
 haslength(iter) = IteratorSize(iter) isa Union{HasShape, HasLength}
 
+ndims(iter) = ndims(IteratorSize(iter))
+ndims(::HasLength) = 1
+ndims(::HasShape{N}) where {N} = N
+
+size(iter) = _size(IteratorSize(iter), iter)
+_size(::HasLength, iter) = (length(iter),)
+_size(::HasShape, iter) = map(length, axes(iter))
+
 abstract type IteratorEltype end
 struct EltypeUnknown <: IteratorEltype end
 struct HasEltype <: IteratorEltype end
