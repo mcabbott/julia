@@ -220,10 +220,7 @@ julia> diagind(A,-1)
 2:4:6
 ```
 """
-function diagind(A::AbstractMatrix, k::Integer=0)
-    require_one_based_indexing(A)
-    diagind(size(A,1), size(A,2), k)
-end
+diagind(A::AbstractMatrix, k::Integer=0) = diagind(size(A,1), size(A,2), k)
 
 """
     diag(M, k::Integer=0)

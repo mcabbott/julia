@@ -6,7 +6,6 @@ struct Diagonal{T,V<:AbstractVector{T}} <: AbstractMatrix{T}
     diag::V
 
     function Diagonal{T,V}(diag) where {T,V<:AbstractVector{T}}
-        require_one_based_indexing(diag)
         new{T,V}(diag)
     end
 end
@@ -97,12 +96,19 @@ similar(D::Diagonal, ::Type{T}) where {T} = Diagonal(similar(D.diag, T))
 copyto!(D1::Diagonal, D2::Diagonal) = (copyto!(D1.diag, D2.diag); D1)
 
 size(D::Diagonal) = (n = length(D.diag); (n,n))
+axes(D::Diagonal) = (ax = axes1(D.diag); (ax, ax))
 
 function size(D::Diagonal,d::Integer)
     if d<1
         throw(ArgumentError("dimension must be ≥ 1, got $d"))
     end
     return d<=2 ? length(D.diag) : 1
+end
+function axes(D::Diagonal,d::Integer)
+    if d<1
+        throw(ArgumentError("dimension must be ≥ 1, got $d"))
+    end
+    return d<=2 ? axes1(D.diag) : Base.OneTo(1)
 end
 
 @inline function getindex(D::Diagonal, i::Int, j::Int)
@@ -115,7 +121,7 @@ end
     r
 end
 diagzero(::Diagonal{T},i,j) where {T} = zero(T)
-diagzero(D::Diagonal{<:AbstractMatrix{T}},i,j) where {T} = zeros(T, size(D.diag[i], 1), size(D.diag[j], 2))
+diagzero(D::Diagonal{<:AbstractMatrix{T}},i,j) where {T} = zeros(T, axes(D.diag[i], 1), axes(D.diag[j], 2))
 
 function setindex!(D::Diagonal, v, i::Int, j::Int)
     @boundscheck checkbounds(D, i, j)
@@ -154,6 +160,7 @@ isdiag(D::Diagonal{<:Number}) = true
 istriu(D::Diagonal, k::Integer=0) = k <= 0 || iszero(D.diag) ? true : false
 istril(D::Diagonal, k::Integer=0) = k >= 0 || iszero(D.diag) ? true : false
 function triu!(D::Diagonal{T}, k::Integer=0) where T
+    require_one_based_indexing(D)
     n = size(D,1)
     if !(-n + 1 <= k <= n + 1)
         throw(ArgumentError(string("the requested diagonal, $k, must be at least ",
@@ -165,6 +172,7 @@ function triu!(D::Diagonal{T}, k::Integer=0) where T
 end
 
 function tril!(D::Diagonal{T}, k::Integer=0) where T
+    require_one_based_indexing(D)
     n = size(D,1)
     if !(-n - 1 <= k <= n - 1)
         throw(ArgumentError(string("the requested diagonal, $k, must be at least ",
@@ -207,22 +215,22 @@ Base.literal_pow(::typeof(^), D::Diagonal, valp::Val) =
 Base.literal_pow(::typeof(^), D::Diagonal, ::Val{-1}) = inv(D) # for disambiguation
 
 function _muldiag_size_check(A, B)
-    nA = size(A, 2)
-    mB = size(B, 1)
+    nA = axes(A, 2)
+    mB = axes(B, 1)
     @noinline throw_dimerr(::AbstractMatrix, nA, mB) = throw(DimensionMismatch("second dimension of A, $nA, does not match first dimension of B, $mB"))
     @noinline throw_dimerr(::AbstractVector, nA, mB) = throw(DimensionMismatch("second dimension of D, $nA, does not match length of V, $mB"))
     nA == mB || throw_dimerr(B, nA, mB)
     return nothing
 end
 # the output matrix should have the same size as the non-diagonal input matrix or vector
-@noinline throw_dimerr(szC, szA) = throw(DimensionMismatch("output matrix has size: $szC, but should have size $szA"))
+@noinline throw_dimerr(axC, axA) = throw(DimensionMismatch("output matrix has axes(C) == $axC, but should have $axA"))
 _size_check_out(C, ::Diagonal, A) = _size_check_out(C, A)
 _size_check_out(C, A, ::Diagonal) = _size_check_out(C, A)
 _size_check_out(C, A::Diagonal, ::Diagonal) = _size_check_out(C, A)
 function _size_check_out(C, A)
-    szA = size(A)
-    szC = size(C)
-    szA == szC || throw_dimerr(szC, szA)
+    axA = axes(A)
+    axC = axes(C)
+    axA == axC || throw_dimerr(axA, axC)
     return nothing
 end
 function _muldiag_size_check(C, A, B)
@@ -241,9 +249,9 @@ function (*)(D::Diagonal, V::AbstractVector)
 end
 
 (*)(A::AbstractMatrix, D::Diagonal) =
-    mul!(similar(A, promote_op(*, eltype(A), eltype(D.diag)), size(A)), A, D)
+    mul!(similar(A, promote_op(*, eltype(A), eltype(D.diag)), axes(A)), A, D)
 (*)(D::Diagonal, A::AbstractMatrix) =
-    mul!(similar(A, promote_op(*, eltype(A), eltype(D.diag)), size(A)), D, A)
+    mul!(similar(A, promote_op(*, eltype(A), eltype(D.diag)), axes(A)), D, A)
 
 rmul!(A::AbstractMatrix, D::Diagonal) = mul!(A, A, D)
 lmul!(D::Diagonal, B::AbstractVecOrMat) = mul!(B, D, B)
@@ -251,14 +259,14 @@ lmul!(D::Diagonal, B::AbstractVecOrMat) = mul!(B, D, B)
 #TODO: It seems better to call (D' * adjA')' directly?
 function *(adjA::Adjoint{<:Any,<:AbstractMatrix}, D::Diagonal)
     A = adjA.parent
-    Ac = similar(A, promote_op(*, eltype(A), eltype(D.diag)), (size(A, 2), size(A, 1)))
+    Ac = similar(A, promote_op(*, eltype(A), eltype(D.diag)), (axes(A, 2), axes(A, 1)))
     adjoint!(Ac, A)
     rmul!(Ac, D)
 end
 
 function *(transA::Transpose{<:Any,<:AbstractMatrix}, D::Diagonal)
     A = transA.parent
-    At = similar(A, promote_op(*, eltype(A), eltype(D.diag)), (size(A, 2), size(A, 1)))
+    At = similar(A, promote_op(*, eltype(A), eltype(D.diag)), (axes(A, 2), axes(A, 1)))
     transpose!(At, A)
     rmul!(At, D)
 end
@@ -268,14 +276,14 @@ end
 
 function *(D::Diagonal, adjA::Adjoint{<:Any,<:AbstractMatrix})
     A = adjA.parent
-    Ac = similar(A, promote_op(*, eltype(A), eltype(D.diag)), (size(A, 2), size(A, 1)))
+    Ac = similar(A, promote_op(*, eltype(A), eltype(D.diag)), (axes(A, 2), axes(A, 1)))
     adjoint!(Ac, A)
     lmul!(D, Ac)
 end
 
 function *(D::Diagonal, transA::Transpose{<:Any,<:AbstractMatrix})
     A = transA.parent
-    At = similar(A, promote_op(*, eltype(A), eltype(D.diag)), (size(A, 2), size(A, 1)))
+    At = similar(A, promote_op(*, eltype(A), eltype(D.diag)), (axes(A, 2), axes(A, 1)))
     transpose!(At, A)
     lmul!(D, At)
 end
@@ -338,29 +346,28 @@ end
 
 function mul!(C::AbstractMatrix, Da::Diagonal, Db::Diagonal, alpha::Number, beta::Number)
     _muldiag_size_check(C, Da, Db)
-    require_one_based_indexing(C)
-    mA = size(Da, 1)
+    mA_axis = axes(Da.diag)
     da = Da.diag
     db = Db.diag
     _rmul_or_fill!(C, beta)
     if iszero(beta)
-        @inbounds @simd for i in 1:mA
+        @inbounds @simd for i in mA_axis
             C[i,i] = Ref(da[i] * db[i]) .*ₛ alpha
         end
     else
-        @inbounds @simd for i in 1:mA
+        @inbounds @simd for i in mA_axis
             C[i,i] += Ref(da[i] * db[i]) .*ₛ alpha
         end
     end
     return C
 end
 
-/(A::AbstractVecOrMat, D::Diagonal) = _rdiv!(similar(A, promote_op(/, eltype(A), eltype(D)), size(A)), A, D)
+/(A::AbstractVecOrMat, D::Diagonal) = _rdiv!(similar(A, promote_op(/, eltype(A), eltype(D)), axes(A)), A, D)
 
 rdiv!(A::AbstractVecOrMat, D::Diagonal) = @inline _rdiv!(A, A, D)
 # avoid copy when possible via internal 3-arg backend
 function _rdiv!(B::AbstractVecOrMat, A::AbstractVecOrMat, D::Diagonal)
-    require_one_based_indexing(A)
+    require_one_based_indexing(B, A, D)
     dd = D.diag
     m, n = size(A, 1), size(A, 2)
     if (k = length(dd)) != n
@@ -376,7 +383,7 @@ function _rdiv!(B::AbstractVecOrMat, A::AbstractVecOrMat, D::Diagonal)
     B
 end
 
-\(D::Diagonal, B::AbstractVecOrMat) = ldiv!(similar(B, promote_op(\, eltype(D), eltype(B)), size(B)), D, B)
+\(D::Diagonal, B::AbstractVecOrMat) = ldiv!(similar(B, promote_op(\, eltype(D), eltype(B)), axes(B)), D, B)
 
 ldiv!(D::Diagonal, B::AbstractVecOrMat) = @inline ldiv!(B, D, B)
 function ldiv!(B::AbstractVecOrMat, D::Diagonal, A::AbstractVecOrMat)
@@ -399,6 +406,7 @@ end
 \(D::Diagonal, B::Diagonal) = ldiv!(similar(B, promote_op(\, eltype(D), eltype(B))), D, B)
 /(A::Diagonal, D::Diagonal) = _rdiv!(similar(A, promote_op(/, eltype(A), eltype(D))), A, D)
 function _rdiv!(Dc::Diagonal, Db::Diagonal, Da::Diagonal)
+    require_one_based_indexing(Dc, Db, Da)
     n, k = length(Db.diag), length(Da.diag)
     n == k || throw(DimensionMismatch("left hand side has $n columns but D is $k by $k"))
     j = findfirst(iszero, Da.diag)
@@ -417,6 +425,7 @@ ldiv!(Dc::Diagonal, Da::Diagonal, Db::Diagonal) = Diagonal(ldiv!(Dc.diag, Da, Db
 @propagate_inbounds _getldiag(S::SymTridiagonal, i) = transpose(S.ev[i])
 
 function (\)(D::Diagonal, S::SymTridiagonal)
+    require_one_based_indexing(D)
     T = promote_op(\, eltype(D), eltype(S))
     du = similar(S.ev, T, max(length(S.dv)-1, 0))
     d  = similar(S.dv, T, length(S.dv))
@@ -425,6 +434,7 @@ function (\)(D::Diagonal, S::SymTridiagonal)
 end
 (\)(D::Diagonal, T::Tridiagonal) = ldiv!(similar(T, promote_op(\, eltype(D), eltype(T))), D, T)
 function ldiv!(T::Tridiagonal, D::Diagonal, S::Union{SymTridiagonal,Tridiagonal})
+    require_one_based_indexing(D)
     m = size(S, 1)
     dd = D.diag
     if (k = length(dd)) != m
@@ -454,6 +464,7 @@ function ldiv!(T::Tridiagonal, D::Diagonal, S::Union{SymTridiagonal,Tridiagonal}
 end
 
 function (/)(S::SymTridiagonal, D::Diagonal)
+    require_one_based_indexing(D)
     T = promote_op(\, eltype(D), eltype(S))
     du = similar(S.ev, T, max(length(S.dv)-1, 0))
     d  = similar(S.dv, T, length(S.dv))
@@ -462,6 +473,7 @@ function (/)(S::SymTridiagonal, D::Diagonal)
 end
 (/)(T::Tridiagonal, D::Diagonal) = _rdiv!(similar(T, promote_op(/, eltype(T), eltype(D))), T, D)
 function _rdiv!(T::Tridiagonal, S::Union{SymTridiagonal,Tridiagonal}, D::Diagonal)
+    require_one_based_indexing(D)
     n = size(S, 2)
     dd = D.diag
     if (k = length(dd)) != n
@@ -525,6 +537,7 @@ for Tri in (:UpperTriangular, :LowerTriangular)
     end
     @eval @inline mul!(C::$Tri, A::$Tri, D::Diagonal, α::Number, β::Number) = $Tri(mul!(C.data, A.data, D, α, β))
     @eval @inline function mul!(C::$Tri, A::$UTri, D::Diagonal, α::Number, β::Number)
+        require_one_based_indexing(D)
         iszero(α) && return _rmul_or_fill!(C, β)
         diag′ = iszero(β) ? nothing : diag(C)
         data = mul!(C.data, A.data, D, α, β)
@@ -533,6 +546,7 @@ for Tri in (:UpperTriangular, :LowerTriangular)
 end
 
 @inline function kron!(C::AbstractMatrix, A::Diagonal, B::Diagonal)
+    require_one_based_indexing(A, B, C)
     valA = A.diag; nA = length(valA)
     valB = B.diag; nB = length(valB)
     nC = checksquare(C)
@@ -606,9 +620,9 @@ function diag(D::Diagonal{T}, k::Integer=0) where T
     # every branch call similar(..., ::Int) to make sure the
     # same vector type is returned independent of k
     if k == 0
-        return copyto!(similar(D.diag, length(D.diag)), D.diag)
+        return copyto!(similar(D.diag, axes1(D.diag)), D.diag)
     elseif -size(D,1) <= k <= size(D,1)
-        return fill!(similar(D.diag, size(D,1)-abs(k)), zero(T))
+        return fill!(similar(D.diag, axes1(D.diag)[begin:end-abs(k)]), zero(T))
     else
         throw(ArgumentError(string("requested diagonal, $k, must be at least $(-size(D, 1)) ",
             "and at most $(size(D, 2)) for an $(size(D, 1))-by-$(size(D, 2)) matrix")))
@@ -632,7 +646,7 @@ end
 
 function inv(D::Diagonal{T}) where T
     Di = similar(D.diag, typeof(inv(zero(T))))
-    for i = 1:length(D.diag)
+    for i in eachindex(D.diag)
         if D.diag[i] == zero(T)
             throw(SingularException(i))
         end
@@ -643,7 +657,7 @@ end
 
 function pinv(D::Diagonal{T}) where T
     Di = similar(D.diag, typeof(inv(zero(T))))
-    for i = 1:length(D.diag)
+    for i in eachindex(D.diag)
         isfinite(inv(D.diag[i])) ? Di[i]=inv(D.diag[i]) : Di[i]=zero(T)
     end
     Diagonal(Di)
@@ -651,7 +665,7 @@ end
 function pinv(D::Diagonal{T}, tol::Real) where T
     Di = similar(D.diag, typeof(inv(zero(T))))
     if( !isempty(D.diag) ) maxabsD = maximum(abs.(D.diag)) end
-    for i = 1:length(D.diag)
+    for i in eachindex(D.diag)
         if( abs(D.diag[i]) > tol*maxabsD && isfinite(inv(D.diag[i])) )
             Di[i]=inv(D.diag[i])
         else
@@ -665,8 +679,12 @@ end
 eigvals(D::Diagonal{<:Number}; permute::Bool=true, scale::Bool=true) = D.diag
 eigvals(D::Diagonal; permute::Bool=true, scale::Bool=true) =
     [eigvals(x) for x in D.diag] #For block matrices, etc.
-eigvecs(D::Diagonal) = Matrix{eltype(D)}(I, size(D))
+function eigvecs(D::Diagonal)
+    require_one_based_indexing(D)
+    Matrix{eltype(D)}(I, size(D))
+end
 function eigen(D::Diagonal; permute::Bool=true, scale::Bool=true, sortby::Union{Function,Nothing}=nothing)
+    require_one_based_indexing(D)
     if any(!isfinite, D.diag)
         throw(ArgumentError("matrix contains Infs or NaNs"))
     end
@@ -677,6 +695,7 @@ end
 svdvals(D::Diagonal{<:Number}) = sort!(abs.(D.diag), rev = true)
 svdvals(D::Diagonal) = [svdvals(v) for v in D.diag]
 function svd(D::Diagonal{T}) where T<:Number
+    require_one_based_indexing(D)
     S   = abs.(D.diag)
     piv = sortperm(S, rev = true)
     U   = Diagonal(D.diag ./ S)
@@ -697,10 +716,12 @@ end
 *(A::AbstractTriangular, D::Diagonal) = Base.@invoke *(A::AbstractMatrix, D::Diagonal)
 *(D::Diagonal, A::AbstractTriangular) = Base.@invoke *(D::Diagonal, A::AbstractMatrix)
 
+# This allows dot([1,2,3], Diagonal([4,5]), [6,7,8,9]), BTW!
 dot(x::AbstractVector, D::Diagonal, y::AbstractVector) = _mapreduce_prod(dot, x, D, y)
 
 dot(A::Diagonal, B::Diagonal) = dot(A.diag, B.diag)
 function dot(D::Diagonal, B::AbstractMatrix)
+    # BTW, dot(diagm([1,2]), [1 2 3 4]) works, but dot(Diagonal([1,2]), [1 2 3 4]) does not.
     size(D) == size(B) || throw(DimensionMismatch("Matrix sizes $(size(D)) and $(size(B)) differ"))
     return dot(D.diag, view(B, diagind(B)))
 end
@@ -716,6 +737,7 @@ function _mapreduce_prod(f, x, D::Diagonal, y)
 end
 
 function cholesky!(A::Diagonal, ::Val{false} = Val(false); check::Bool = true)
+    require_one_based_indexing(A)
     info = 0
     for (i, di) in enumerate(A.diag)
         if isreal(di) && real(di) > 0
@@ -746,11 +768,11 @@ Base._sum(A::Diagonal, ::Colon) = sum(A.diag)
 function Base._sum(A::Diagonal, dims::Integer)
     res = Base.reducedim_initarray(A, dims, zero(eltype(A)))
     if dims <= 2
-        for i = 1:length(A.diag)
+        for i in eachindex(A.diag)
             @inbounds res[i] = A.diag[i]
         end
     else
-        for i = 1:length(A.diag)
+        for i in eachindex(A.diag)
             @inbounds res[i,i] = A.diag[i]
         end
     end
