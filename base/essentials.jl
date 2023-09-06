@@ -144,7 +144,7 @@ macro specialize(vars...)
 end
 
 """
-    @isdefined s -> Bool
+    @isdefined s --> Bool
 
 Tests whether variable `s` is defined in the current scope.
 
@@ -179,7 +179,7 @@ macro isdefined(s::Symbol)
 end
 
 """
-    nameof(m::Module) -> Symbol
+    nameof(m::Module) --> Symbol
 
 Get the name of a `Module` as a [`Symbol`](@ref).
 
@@ -354,7 +354,7 @@ end
 pairs(::Type{NamedTuple}) = Pairs{Symbol, V, NTuple{N, Symbol}, NamedTuple{names, T}} where {V, N, names, T<:NTuple{N, Any}}
 
 """
-    Base.Pairs(values, keys) <: AbstractDict{eltype(keys), eltype(values)}
+    Base.Pairs(values, keys) --> AbstractDict{eltype(keys), eltype(values)}
 
 Transforms an indexable container into a Dictionary-view of the same data.
 Modifying the key-space of the underlying data may invalidate this object.
@@ -364,7 +364,7 @@ Pairs
 argtail(x, rest...) = rest
 
 """
-    tail(x::Tuple)::Tuple
+    tail(x::Tuple) --> Tuple
 
 Return a `Tuple` consisting of all but the first component of `x`.
 
@@ -551,7 +551,7 @@ unsafe_convert(::Type{T}, x::T) where {T<:Ptr} = x  # to resolve ambiguity with 
 unsafe_convert(::Type{P}, x::Ptr) where {P<:Ptr} = convert(P, x)
 
 """
-    reinterpret(::Type{Out}, x::In)
+    reinterpret(::Type{Out}, x::In) --> Out
 
 Change the type-interpretation of the binary data in the isbits value `x`
 to that of the isbits type `Out`.
@@ -588,7 +588,7 @@ function reinterpret(::Type{Out}, x) where {Out}
 end
 
 """
-    sizeof(T::DataType)
+    sizeof(T::DataType) --> Int
     sizeof(obj)
 
 Size, in bytes, of the canonical binary representation of the given `DataType` `T`, if any.
@@ -653,7 +653,7 @@ ifelse(condition::Bool, x, y) = Core.ifelse(condition, x, y)
 @eval setindex!(A::Array{Any}, @nospecialize(x), i::Int) = arrayset($(Expr(:boundscheck)), A, x, i)
 
 """
-    esc(e)
+    esc(e) --> Expr
 
 Only valid in the context of an [`Expr`](@ref) returned from a macro. Prevents the macro hygiene
 pass from turning embedded variables into gensym variables. See the [Macros](@ref man-macros)
@@ -801,7 +801,7 @@ getindex(v::SimpleVector, I::AbstractArray) = Core.svec(Any[ v[i] for i in I ]..
 unsafe_convert(::Type{Ptr{Any}}, sv::SimpleVector) = convert(Ptr{Any},pointer_from_objref(sv)) + sizeof(Ptr)
 
 """
-    isassigned(array, i) -> Bool
+    isassigned(array, i) --> Bool
 
 Test whether the given array has a value associated with index `i`. Return `false`
 if the index is out of bounds, or has an undefined reference.
@@ -934,7 +934,7 @@ end
 inferencebarrier(@nospecialize(x)) = compilerbarrier(:type, x)
 
 """
-    isempty(collection) -> Bool
+    isempty(collection) --> Bool
 
 Determine whether a collection is empty (has no elements).
 
@@ -1005,11 +1005,11 @@ See also: [`NaN`](@ref), [`skipmissing`](@ref), [`nonmissingtype`](@ref).
 const missing = Missing()
 
 """
-    ismissing(x)
+    ismissing(x) --> Bool
 
-Indicate whether `x` is [`missing`](@ref).
+Indicate whether `x === `[`missing`](@ref).
 
-See also: [`skipmissing`](@ref), [`isnothing`](@ref), [`isnan`](@ref).
+See also [`skipmissing`](@ref), [`isnothing`](@ref), [`isnan`](@ref).
 """
 ismissing(x) = x === missing
 
@@ -1042,7 +1042,7 @@ julia> peek(b, Char)
 function peek end
 
 """
-    @__LINE__ -> Int
+    @__LINE__ --> Int
 
 Expand to the line number of the location of the macrocall.
 Return `0` if the line number could not be determined.
@@ -1081,7 +1081,7 @@ next element and the new iteration state should be returned.
 function iterate end
 
 """
-    isiterable(T) -> Bool
+    isiterable(T) --> Bool
 
 Test if type `T` is an iterable collection type or not,
 that is whether it has an `iterate` method or not.

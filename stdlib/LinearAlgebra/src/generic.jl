@@ -149,7 +149,7 @@ end
 # For better performance when input and output are the same array
 # See https://github.com/JuliaLang/julia/issues/8415#issuecomment-56608729
 """
-    rmul!(A::AbstractArray, b::Number)
+    rmul!(A::AbstractArray, b::Number) --> A
 
 Scale an array `A` by a scalar `b` overwriting `A` in-place.  Use
 [`lmul!`](@ref) to multiply scalar from left.  The scaling operation
@@ -187,7 +187,7 @@ end
 
 
 """
-    lmul!(a::Number, B::AbstractArray)
+    lmul!(a::Number, B::AbstractArray) --> B
 
 Scale an array `B` by a scalar `a` overwriting `B` in-place.  Use
 [`rmul!`](@ref) to multiply scalar from right.  The scaling operation
@@ -224,7 +224,7 @@ function lmul!(s::Number, X::AbstractArray)
 end
 
 """
-    rdiv!(A::AbstractArray, b::Number)
+    rdiv!(A::AbstractArray, b::Number) --> A
 
 Divide each entry in an array `A` by a scalar `b` overwriting `A`
 in-place.  Use [`ldiv!`](@ref) to divide scalar from left.
@@ -250,7 +250,7 @@ function rdiv!(X::AbstractArray, s::Number)
 end
 
 """
-    ldiv!(a::Number, B::AbstractArray)
+    ldiv!(a::Number, B::AbstractArray) --> B
 
 Divide each entry in an array `B` by a scalar `a` overwriting `B`
 in-place.  Use [`rdiv!`](@ref) to divide scalar from right.
@@ -281,10 +281,10 @@ ldiv!(Y::AbstractArray, A::AbstractMatrix, B::AbstractArray) = ldiv!(A, copyto!(
 
 
 """
-    cross(x, y)
-    ×(x,y)
+    cross(a::AbstractVector, b::AbstractVector) -> AbstractVector
+    a × b
 
-Compute the cross product of two 3-vectors.
+Compute the cross product of two length-3 vectors.
 
 # Examples
 ```jldoctest
@@ -317,9 +317,12 @@ function cross(a::AbstractVector, b::AbstractVector)
 end
 
 """
-    triu(M)
+    triu(M::AbstractMatrix) --> AbstractMatrix
 
 Upper triangle of a matrix.
+
+See also [`istriu`](@ref) to check, [`triu!`](@ref) in-place,
+and [`tril`](@ref) for the lower triangle.
 
 # Examples
 ```jldoctest
@@ -341,7 +344,7 @@ julia> triu(a)
 triu(M::AbstractMatrix) = triu!(copy(M))
 
 """
-    tril(M)
+    tril(M::AbstractMatrix) --> AbstractMatrix
 
 Lower triangle of a matrix.
 
@@ -531,7 +534,7 @@ normp(x, p) = generic_normp(x, p)
 
 
 """
-    norm(A, p::Real=2)
+    norm(A, p::Real=2) --> Number
 
 For any iterable container `A` (including arrays of any dimension) of numbers (or any
 element type for which `norm` is defined), compute the `p`-norm (defaulting to `p=2`) as if
@@ -610,7 +613,7 @@ function norm(itr, p::Real=2)
 end
 
 """
-    norm(x::Number, p::Real=2)
+    norm(x::Number, p::Real=2) --> Number
 
 For numbers, return ``\\left( |x|^p \\right)^{1/p}``.
 
@@ -699,7 +702,7 @@ end
 
 
 """
-    opnorm(A::AbstractMatrix, p::Real=2)
+    opnorm(A::AbstractMatrix, p::Real=2) --> Number
 
 Compute the operator norm (or matrix norm) induced by the vector `p`-norm,
 where valid values of `p` are `1`, `2`, or `Inf`. (Note that for sparse matrices,
@@ -747,7 +750,7 @@ function opnorm(A::AbstractMatrix, p::Real=2)
 end
 
 """
-    opnorm(x::Number, p::Real=2)
+    opnorm(x::Number, p::Real=2) --> Number
 
 For numbers, return ``\\left( |x|^p \\right)^{1/p}``.
 This is equivalent to [`norm`](@ref).
@@ -808,7 +811,7 @@ opnorm(v::TransposeAbsVec) = norm(v.parent)
 norm(v::AdjOrTrans, p::Real) = norm(v.parent, p)
 
 """
-    dot(x, y)
+    dot(x, y) --> Number
     x ⋅ y
 
 Compute the dot product between two vectors. For complex vectors, the first
@@ -944,7 +947,7 @@ dot(x::AbstractVector, transA::Transpose{<:Real}, y::AbstractVector) = adjoint(d
 ###########################################################################################
 
 """
-    rank(A::AbstractMatrix; atol::Real=0, rtol::Real=atol>0 ? 0 : n*ϵ)
+    rank(A::AbstractMatrix; atol::Real=0, rtol::Real=atol>0 ? 0 : n*ϵ) --> Int
     rank(A::AbstractMatrix, rtol::Real)
 
 Compute the numerical rank of a matrix by counting how many outputs of
@@ -995,7 +998,7 @@ end
 rank(x::Union{Number,AbstractVector}) = iszero(x) ? 0 : 1
 
 """
-    tr(M)
+    tr(M::AbstractMatrix)
 
 Matrix trace. Sums the diagonal elements of `M`.
 
@@ -1008,6 +1011,15 @@ julia> A = [1 2; 3 4]
 
 julia> tr(A)
 5
+
+julia> B = [fill(i+j,1,3) for i in 1:2, j in 1:2]
+2×2 Matrix{Matrix{Int64}}:
+ [2 2 2]  [3 3 3]
+ [3 3 3]  [4 4 4]
+
+julia> tr(B)
+1×3 Matrix{Int64}:
+ 6  6  6
 ```
 """
 function tr(A::AbstractMatrix)
@@ -1022,7 +1034,7 @@ tr(x::Number) = x
 #det(a::AbstractMatrix)
 
 """
-    inv(M)
+    inv(M::AbstractMatrix) --> AbstractMatrix
 
 Matrix inverse. Computes matrix `N` such that
 `M * N = I`, where `I` is the identity matrix.
@@ -1077,7 +1089,7 @@ end
 @inline Base.literal_pow(::typeof(^), A::AbstractMatrix, ::Val{-1}) = inv(A)
 
 """
-    \\(A, B)
+    \\(A, B) --> AbstractVecOrMat
 
 Matrix division using a polyalgorithm. For input matrices `A` and `B`, the result `X` is
 such that `A*X == B` when `A` is square. The solver that is used depends upon the structure
@@ -1128,7 +1140,7 @@ end
 
 (\)(a::AbstractVector, b::AbstractArray) = pinv(a) * b
 """
-    A / B
+    A / B --> AbstractVecOrMat
 
 Matrix right-division: `A / B` is equivalent to `(B' \\ A')'` where [`\\`](@ref) is the left-division operator.
 For square matrices, the result `X` is such that `A == X*B`.
@@ -1189,7 +1201,7 @@ end
 issymmetric(A::AbstractMatrix{<:Real}) = ishermitian(A)
 
 """
-    issymmetric(A) -> Bool
+    issymmetric(A) --> Bool
 
 Test whether a matrix is symmetric.
 
@@ -1228,7 +1240,7 @@ end
 issymmetric(x::Number) = x == x
 
 """
-    ishermitian(A) -> Bool
+    ishermitian(A) --> Bool
 
 Test whether a matrix is Hermitian.
 
@@ -1267,7 +1279,7 @@ end
 ishermitian(x::Number) = (x == conj(x))
 
 """
-    istriu(A::AbstractMatrix, k::Integer = 0) -> Bool
+    istriu(A::AbstractMatrix, k::Integer = 0) --> Bool
 
 Test whether `A` is upper triangular starting from the `k`th superdiagonal.
 
@@ -1312,7 +1324,7 @@ istriu(x::Number) = true
 end
 
 """
-    istril(A::AbstractMatrix, k::Integer = 0) -> Bool
+    istril(A::AbstractMatrix, k::Integer = 0) --> Bool
 
 Test whether `A` is lower triangular starting from the `k`th superdiagonal.
 
@@ -1357,7 +1369,7 @@ istril(x::Number) = true
 end
 
 """
-    isbanded(A::AbstractMatrix, kl::Integer, ku::Integer) -> Bool
+    isbanded(A::AbstractMatrix, kl::Integer, ku::Integer) --> Bool
 
 Test whether `A` is banded with lower bandwidth starting from the `kl`th superdiagonal
 and upper bandwidth extending through the `ku`th superdiagonal.
@@ -1390,7 +1402,7 @@ true
 isbanded(A::AbstractMatrix, kl::Integer, ku::Integer) = istriu(A, kl) && istril(A, ku)
 
 """
-    isdiag(A) -> Bool
+    isdiag(A) --> Bool
 
 Test whether a matrix is diagonal in the sense that `iszero(A[i,j])` is true unless `i == j`.
 Note that it is not necessary for `A` to be square;
@@ -1435,7 +1447,7 @@ isdiag(A::AbstractMatrix) = isbanded(A, 0, 0)
 isdiag(x::Number) = true
 
 """
-    axpy!(α, x::AbstractArray, y::AbstractArray)
+    axpy!(α, x::AbstractArray, y::AbstractArray) --> y
 
 Overwrite `y` with `x * α + y` and return `y`.
 If `x` and `y` have the same axes, it's equivalent with `y .+= x .* a`.
@@ -1481,7 +1493,7 @@ function axpy!(α, x::AbstractArray, rx::AbstractArray{<:Integer}, y::AbstractAr
 end
 
 """
-    axpby!(α, x::AbstractArray, β, y::AbstractArray)
+    axpby!(α, x::AbstractArray, β, y::AbstractArray) --> y
 
 Overwrite `y` with `x * α + y * β` and return `y`.
 If `x` and `y` have the same axes, it's equivalent with `y .= x .* a .+ y .* β`.
@@ -1618,11 +1630,11 @@ Multiplies `A` in-place by a Householder reflection on the left. It is equivalen
 end
 
 """
-    det(M)
+    det(M::AbstractMatrix) --> Number
 
 Matrix determinant.
 
-See also: [`logdet`](@ref) and [`logabsdet`](@ref).
+See also [`logdet`](@ref) and [`logabsdet`](@ref).
 
 # Examples
 ```jldoctest
@@ -1633,6 +1645,9 @@ julia> M = [1 0; 2 2]
 
 julia> det(M)
 2.0
+
+julia> det(-3)
+-3
 ```
 """
 function det(A::AbstractMatrix{T}) where {T}
@@ -1648,10 +1663,12 @@ det(x::Number) = x
 det(A::AbstractMatrix{BigInt}) = det_bareiss(A)
 
 """
-    logabsdet(M)
+    logabsdet(M::AbstractMatrix) --> Tuple{Number, Number}
 
 Log of absolute value of matrix determinant. Equivalent to
 `(log(abs(det(M))), sign(det(M)))`, but may provide increased accuracy and/or speed.
+
+See also [`det`](@ref), [`logdet`](@ref), [`sign`](@ref).
 
 # Examples
 ```jldoctest
@@ -1666,16 +1683,22 @@ julia> det(A)
 julia> logabsdet(A)
 (0.0, -1.0)
 
-julia> B = [2. 0.; 0. 1.]
-2×2 Matrix{Float64}:
- 2.0  0.0
- 0.0  1.0
+julia> B = [2 0; 0 1]
+2×2 Matrix{Int64}:
+ 2  0
+ 0  1
 
 julia> det(B)
 2.0
 
 julia> logabsdet(B)
-(0.6931471805599453, 1.0)
+(0.6931471805599453, 1)
+
+julia> logabsdet(zeros(ComplexF32, 3, 3))
+(-Inf32, 0.0f0 + 0.0f0im)
+
+julia> logabsdet(2)
+(0.6931471805599453, 1)
 ```
 """
 function logabsdet(A::AbstractMatrix)
@@ -1687,10 +1710,12 @@ end
 logabsdet(a::Number) = log(abs(a)), sign(a)
 
 """
-    logdet(M)
+    logdet(M::AbstractMatrix) --> Number
 
 Log of matrix determinant. Equivalent to `log(det(M))`, but may provide
 increased accuracy and/or speed.
+
+See also [`logabsdet`](@ref), [`det`](@ref).
 
 # Examples
 ```jldoctest
@@ -1704,6 +1729,9 @@ julia> logdet(M)
 
 julia> logdet(Matrix(I, 3, 3))
 0.0
+
+julia> logdet(zeros(ComplexF32, 3, 3))
+-Inf32 + 0.0f0im
 ```
 """
 function logdet(A::AbstractMatrix)
@@ -1806,7 +1834,7 @@ function isapprox(x::AbstractArray, y::AbstractArray;
 end
 
 """
-    normalize!(a::AbstractArray, p::Real=2)
+    normalize!(a::AbstractArray, p::Real=2) --> a
 
 Normalize the array `a` in-place so that its `p`-norm equals unity,
 i.e. `norm(a, p) == 1`.

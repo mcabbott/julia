@@ -341,7 +341,7 @@ julia> diagm([1,2,3])
 diagm(v::AbstractVector) = diagm(0 => v)
 diagm(m::Integer, n::Integer, v::AbstractVector) = diagm(m, n, 0 => v)
 
-function tr(A::Matrix{T}) where T
+function tr(A::Matrix{T}) where T<:Number
     n = checksquare(A)
     t = zero(T)
     @inbounds @simd for i in 1:n

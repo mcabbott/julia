@@ -140,7 +140,7 @@ end
 sorteig!(λ::AbstractVector, sortby::Union{Function,Nothing}=eigsortby) = sortby === nothing ? λ : sort!(λ, by=sortby)
 
 """
-    eigen!(A; permute, scale, sortby)
+    eigen!(A; permute, scale, sortby) --> Eigen
     eigen!(A, B; sortby)
 
 Same as [`eigen`](@ref), but saves space by overwriting the input `A` (and
@@ -178,7 +178,7 @@ function eigen!(A::StridedMatrix{T}; permute::Bool=true, scale::Bool=true, sortb
 end
 
 """
-    eigen(A; permute::Bool=true, scale::Bool=true, sortby) -> Eigen
+    eigen(A; permute::Bool=true, scale::Bool=true, sortby) --> Eigen
 
 Compute the eigenvalue decomposition of `A`, returning an [`Eigen`](@ref) factorization object `F`
 which contains the eigenvalues in `F.values` and the eigenvectors in the columns of the
@@ -254,7 +254,7 @@ end
 eigen(x::Number) = Eigen([x], fill(one(x), 1, 1))
 
 """
-    eigvecs(A; permute::Bool=true, scale::Bool=true, `sortby`) -> Matrix
+    eigvecs(A; permute::Bool=true, scale::Bool=true, [sortby]) --> Matrix
 
 Return a matrix `M` whose columns are the eigenvectors of `A`. (The `k`th eigenvector can
 be obtained from the slice `M[:, k]`.) The `permute`, `scale`, and `sortby` keywords are the same as
@@ -276,7 +276,7 @@ eigvecs(F::Union{Eigen, GeneralizedEigen}) = F.vectors
 eigvals(F::Union{Eigen, GeneralizedEigen}) = F.values
 
 """
-    eigvals!(A; permute::Bool=true, scale::Bool=true, sortby) -> values
+    eigvals!(A; permute::Bool=true, scale::Bool=true, [sortby]) --> values::Vector
 
 Same as [`eigvals`](@ref), but saves space by overwriting the input `A`, instead of creating a copy.
 The `permute`, `scale`, and `sortby` keywords are the same as for [`eigen`](@ref).
@@ -317,7 +317,7 @@ end
 eigtype(T) = promote_type(Float32, typeof(zero(T)/sqrt(abs2(one(T)))))
 
 """
-    eigvals(A; permute::Bool=true, scale::Bool=true, sortby) -> values
+    eigvals(A; permute::Bool=true, scale::Bool=true, [sortby]) --> values::Vector
 
 Return the eigenvalues of `A`.
 
@@ -353,7 +353,7 @@ julia> eigvals(-2)
 eigvals(x::Number; kwargs...) = imag(x) == 0 ? real(x) : x
 
 """
-    eigmax(A; permute::Bool=true, scale::Bool=true)
+    eigmax(A; permute::Bool=true, scale::Bool=true) --> Number
 
 Return the largest eigenvalue of `A`.
 The option `permute=true` permutes the matrix to become
@@ -394,7 +394,7 @@ function eigmax(A::Union{Number, AbstractMatrix}; permute::Bool=true, scale::Boo
 end
 
 """
-    eigmin(A; permute::Bool=true, scale::Bool=true)
+    eigmin(A; permute::Bool=true, scale::Bool=true) --> Number
 
 Return the smallest eigenvalue of `A`.
 The option `permute=true` permutes the matrix to become
@@ -477,7 +477,7 @@ function eigen!(A::StridedMatrix{T}, B::StridedMatrix{T}; sortby::Union{Function
 end
 
 """
-    eigen(A, B; sortby) -> GeneralizedEigen
+    eigen(A, B; sortby) --> GeneralizedEigen
 
 Compute the generalized eigenvalue decomposition of `A` and `B`, returning a
 [`GeneralizedEigen`](@ref) factorization object `F` which contains the generalized eigenvalues in
@@ -538,7 +538,7 @@ together with the `uplo` field.
 eigencopy_oftype(A, S) = copy_similar(A, S)
 
 """
-    eigvals!(A, B; sortby) -> values
+    eigvals!(A, B; sortby) --> values::Vector
 
 Same as [`eigvals`](@ref), but saves space by overwriting the input `A` (and `B`),
 instead of creating copies.
@@ -595,7 +595,7 @@ function eigvals!(A::StridedMatrix{T}, B::StridedMatrix{T}; sortby::Union{Functi
 end
 
 """
-    eigvals(A, B) -> values
+    eigvals(A, B) --> values::Vector
 
 Compute the generalized eigenvalues of `A` and `B`.
 
@@ -623,7 +623,7 @@ function eigvals(A::AbstractMatrix{TA}, B::AbstractMatrix{TB}; kws...) where {TA
 end
 
 """
-    eigvecs(A, B) -> Matrix
+    eigvecs(A, B) --> Matrix
 
 Return a matrix `M` whose columns are the generalized eigenvectors of `A` and `B`. (The `k`th eigenvector can
 be obtained from the slice `M[:, k]`.)
